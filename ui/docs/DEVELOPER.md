@@ -36,7 +36,6 @@ built on the platform.
 - [PageTabs](#pagetabs)
 - [AccentSurface / MetricTile / TermList](#accentsurface--metrictile--termlist)
 - [AppNotice / AppNoticeBand](#appnotice--appnoticeband)
-- [GeoMap](#geomap)
 - [ApiExplorer](#apiexplorer)
 - [Assistant (createAssistantClient, AssistantChat, AssistantDrawer, AssistantMarkdown)](#assistant)
 - [Documentation site and gate (docsSite, DocsGate, openDocsSession)](#documentation-site-and-gate)
@@ -72,12 +71,7 @@ Required app-side setup:
 2. All runtime deps are peerDependencies -- the app installs them itself:
    `vue`, `pinia`, `@vueuse/core`, `@lucide/vue`, `reka-ui`, `clsx`,
    `class-variance-authority`, `tailwind-merge`, `marked`, `dompurify`,
-   `echarts`; plus `leaflet` (optional peer). Because the app's `vue-tsc`
-   type-checks this package's source, any app that depends on the kit ALSO
-   needs `@types/leaflet` in devDependencies (GeoMap has a type-only
-   leaflet import) even if it never renders a map. Apps that do render maps
-   need `leaflet` in dependencies and `@import "leaflet/dist/leaflet.css";`
-   in their CSS. `marked`, `dompurify` and `echarts` (since 0.19.0) are
+   `echarts`. `marked`, `dompurify` and `echarts` (since 0.19.0) are
    resolved at type-check time by the assistant components but loaded only
    when a reply is rendered or a chart drawn, so an app that never opens
    the assistant ships none of them.
@@ -213,8 +207,8 @@ The stylesheet carries the `dark` custom variant, the `:root` (light) and
 `.dark` token sets, a `@theme inline` block that turns every token into a
 Tailwind utility (`bg-brand`, `text-status-warn-text`, `border-sidebar-border`,
 `bg-chart-3`), the base layer (`border-border`, body background and font),
-and the two renderer hooks every app had pasted: `.themed-tooltip` for echarts
-and the dimmed `.dark .leaflet-tile`. Tailwind v4 processes `@theme` and
+and the renderer hook every app had pasted: `.themed-tooltip` for echarts.
+Tailwind v4 processes `@theme` and
 `@custom-variant` from an imported package stylesheet, so nothing about the
 import is special.
 
@@ -1047,35 +1041,6 @@ place and leave with the view that raised them.
   boolean }`. `tone` defaults to `warn` and picks the mark and the
   `TONE_NOTICE` classes; `to` is the band's selector; `inline` renders the
   notice where it is written, for a surface with no band above it.
-
-## GeoMap
-
-Leaflet map with canvas-rendered markers, built for large datasets
-(10k+ waypoints).
-
-```ts
-interface MapMarker  { id: string; lat: number; lon: number; color?: string; label?: string }
-interface MapLine    { id: string; points: [number, number][]; color?: string; label?: string }
-interface MapPolygon { id: string; points: [number, number][]; color?: string; label?: string }
-```
-
-Props: `markers`, `lines`, `polygons` (default `[]`),
-`selectedId?: string | null`, `fitKey?: string | number` (change it to
-re-fit bounds), `tile?: 'osm' | 'satellite' | 'topo'` (default osm).
-
-Emits: `select: [id, kind: 'marker' | 'line' | 'polygon']`,
-`mapClick: [lat, lon]`. Expose: `fit()`.
-
-Implementation constraints (do not regress):
-- Leaflet loads lazily in onMounted, so apps without maps do not bundle it.
-- `preferCanvas: true` + `L.circleMarker` -- one painted layer instead of a
-  DOM node per marker. divIcon markers melted the main thread at 10k
-  points.
-- Root div carries `isolate z-0` so Leaflet's internal z-indexes (up to
-  1000) stay below app popovers/selects/dialogs at z-50.
-- Selected marker: radius 9 + white ring and the map pans to it. Defaults:
-  markers #3b82f6, lines #f97316, polygons #0ea5e9; dark mode dims tiles
-  except satellite.
 
 ## ApiExplorer
 

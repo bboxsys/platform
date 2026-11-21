@@ -24,7 +24,7 @@ export default defineConfig({
     preserveSymlinks: true,
     // Belt and braces: if ../../ui happens to have its own node_modules (after
     // running the kit's tests), never bundle a second copy of these.
-    dedupe: ['vue', 'pinia', '@vueuse/core', 'reka-ui', '@lucide/vue', 'class-variance-authority', 'clsx', 'tailwind-merge', 'leaflet'],
+    dedupe: ['vue', 'pinia', '@vueuse/core', 'reka-ui', '@lucide/vue', 'class-variance-authority', 'clsx', 'tailwind-merge'],
   },
   optimizeDeps: {
     // Shipped as raw .vue/.ts source; the dev pre-bundler must not touch it.

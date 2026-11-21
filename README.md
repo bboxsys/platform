@@ -1,49 +1,45 @@
 # platform
 
-The Black Box Systems control plane: identity provider, tenant accounts, roles,
-invitations, API tokens, OAuth, PKI, service endpoint registry, and the log and
-store-metrics sinks. This module also carries the platform packages its
-services are built on (`server`, `config`, `logger`,
-`messenger`, `pki`, `user`).
+[![Go Reference](https://pkg.go.dev/badge/github.com/bboxsys/platform.svg)](https://pkg.go.dev/github.com/bboxsys/platform)
+[![npm](https://img.shields.io/npm/v/@bboxsys/ui?label=%40bboxsys%2Fui)](https://www.npmjs.com/package/@bboxsys/ui)
+[![License](https://img.shields.io/badge/license-Apache--2.0-blue)](LICENSE)
 
-```
+A multi-tenant control plane for Go services, and the packages those
+services are built on.
+
+The admin server is the identity provider: tenant accounts, users, roles,
+invitations, API tokens, OAuth sign-in, a private PKI, and a registry of
+service endpoints. Services validate its tokens locally, talk to each other
+over [NATS](https://nats.io), and share one web console and UI kit.
+
+```sh
 go get github.com/bboxsys/platform
 ```
 
-Licensed under the Apache License 2.0 (`LICENSE`). The source is published
-for the projects that build on it; it is maintained by Black Box Systems
-and is not seeking outside contributions.
+## What's inside
 
-## Packages
-
-| Package | Purpose | Who imports it |
+| Area | Packages | What you get |
 |---|---|---|
-| `github.com/bboxsys/platform/admin` | The admin server: `NewAdminServer`, `AdminServer`, `Store`, `LogStore`, `MetricsStore` | The process that hosts the admin service |
-| `github.com/bboxsys/platform/admin/client` | `Auth` and `ID` middleware, `AccountIDFromContext`/`UserIDFromContext`, tenant NATS subjects and notifications, `ServiceEndpoint` | Every service that validates tokens issued by admin |
-| `user` | Identity model: users, accounts, services, agents, roles, credentials, JWT claims | Services and the admin server |
-| `server` | Base HTTPS server with TLS, Let's Encrypt, CORS, and NATS wiring | Every HTTP service |
-| `config` | Viper-based configuration loader and template generation | Service entry points |
-| `logger` | zerolog wrapper with request logging and NATS log hook | Everything |
-| `messenger` | NATS client | Services that publish or subscribe |
-| `job`, `worker` | Asynchronous jobs over NATS: job requests, status updates, queue-group workers | Services that run or request background work |
-| `queue` | Job relay service: stores requests and statuses, forwards to workers, REST submit/list/get | The process that hosts a queue server |
-| `natsapi` | The HTTP API over NATS request/reply: same routes and permissions, chunked streaming, micro discovery, `http.RoundTripper` client | Services that serve agents and AI callers over NATS; agents calling them |
-| `ai`, `ai/anthropic`, `ai/apitool`, `ai/rag`, `ai/memory`, `ai/mcp` | AI assistant: agent loop and HTTP service, Anthropic provider, tools from the OpenAPI document, retrieval, memory, MCP server and client (docs/AI.md) | The admin server (`StartAI`) and product servers that host an assistant |
-| `pki` | X.509 CA, intermediate, certificate issuance, OS trust store | admin server, host agent |
-| `storemetrics` | Store metrics entry model and periodic publisher | Service entry points |
-| `logentry` | Log entry model and NATS subjects | logger, admin server |
-| `letsencrypt`, `clientip`, `utils` | Support packages for `server`, `logger`, and `pki` | Indirect |
+| **Identity** | `admin`, `admin/client`, `user`, `oidctoken` | The admin server and its store; `Auth` middleware that validates tokens with no call back to the admin |
+| **Service base** | `server`, `config`, `logger`, `supervisor` | HTTPS server with TLS, Let's Encrypt and CORS; configuration loading; structured logging; process composition |
+| **Messaging** | `messenger`, `controller`, `natsapi` | NATS client, an embedded NATS server, and the HTTP API bridged over NATS with the same routes and permissions |
+| **Jobs** | `job`, `worker`, `queue` | Background jobs over NATS: dispatch, queue-group workers, and a relay service with history |
+| **AI assistant** | `ai/...` | Agent loop and HTTP service, Anthropic and OpenAI-compatible providers, tools from a service's OpenAPI document, retrieval, memory, MCP |
+| **Docs** | `docsite` | Serve a product's documentation site behind sign-in and make it searchable by the assistant |
+| **Hosts** | `agent`, `host`, `pki` | A headless host agent that registers with the admin, plus the X.509 CA that issues its certificates |
+| **Web** | `admin/ui`, `ui` | The admin console (Vue), and [`@bboxsys/ui`](ui/README.md), the UI kit product consoles share |
 
-`client` is the API boundary. A service that only needs to authenticate
-requests imports `client` and never touches the admin server, the BadgerDB
-stores, or the UI:
+## Authenticate a service
+
+A service that only needs to check who is calling imports `admin/client`
+and nothing else:
 
 ```go
 import admin "github.com/bboxsys/platform/admin/client"
 
 auth := admin.NewAuth(admin.AuthConfig{
     Logger:          logger,
-    TrustedAccounts: trustedAccountIDs, // account public keys issued by admin
+    TrustedAccounts: trustedAccountIDs, // account public keys issued by the admin
 })
 router.HandleFunc("/api/v1/things", auth.Bearer(handler))
 
@@ -53,18 +49,13 @@ func handler(w http.ResponseWriter, r *http.Request) {
 }
 ```
 
-Token validation is self-contained: bearer tokens are NATS user JWTs signed
-by an account nkey, and `Auth` verifies the signature and checks the issuing
-account is in its trusted list. No shared secret and no call back to the
-admin server are needed. `client.IdentityStore` is an optional interface for
-services that also need basic auth or role checks; `*admin.Store` satisfies
-it.
+Tokens are NATS user JWTs signed by an account key. `Auth` verifies the
+signature and checks that the issuing account is trusted, so there is no
+shared secret and no network call per request.
 
-## Hosting the admin service
+## Host the admin server
 
-The admin server runs inside a product's own process, or on its own as
-`cmd/admin`. It listens on its own TLS port and the SPA discovers
-it through the `/serviceendpoints/` map served by the UI server.
+Run it inside your own process, or standalone as `cmd/admin`:
 
 ```go
 adminServer, err := admin.NewAdminServer(&server.ServerOptions{
@@ -72,60 +63,44 @@ adminServer, err := admin.NewAdminServer(&server.ServerOptions{
     HTTPPort:  8443,
     // TLS material, store location, SMTP and OAuth settings via Metadata
 })
-adminServer.StartNATSAPI(admin.NATSAPIOptions{}) // also serve the API over NATS as admin_service
 go adminServer.Start()
 ```
 
-## Calling the API over NATS
+## Run it locally
 
-Any service built on `server` can serve the same HTTP API over the NATS
-controller (`ServerOptions.NATSAPI`), and the admin serves `admin_service`
-in every account. A host agent or an AI service that knows only the
-controller and holds its own credentials calls it with the same verbs,
-paths, payloads, and permissions as over HTTPS:
-
-```go
-client := natsapi.NewClient(nc)                                   // *http.Client
-req, _ := natsapi.NewRequest(ctx, "GET", "admin_service", "/api/v1/users", nil)
-req.Header.Set("Authorization", "Bearer "+cfg.JWT)               // the caller's own NATS user JWT
-resp, err := client.Do(req)
+```sh
+./run.sh                        # admin API on :8901, with an embedded NATS server and job queue
+cd admin/ui && npm install && npm run dev   # admin console on http://localhost:4400
+./run-agent.sh                  # optional: register and run a host agent against it
 ```
 
-From a registered host: `agent api GET /api/v1/users`, `agent api POST
-/api/v1/users --data @user.json`, `agent services`. Bodies stream in chunks,
-so the streaming list endpoints stay streaming, and every served
-connection answers nats micro discovery (`$SRV.INFO`). Section 12 of the
-developer guide has the wire format, multi-tenant serving, and how to scope
-an agent's JWT to read-only access.
+The first run seeds a test profile under `~/.config/platform-test/` with a
+config file, self-signed certificates and a development CA.
+
+## Documentation
+
+| Guide | Covers |
+|---|---|
+| [Developer guide](docs/DEVELOPER.md) | Every package, with integration recipes: authentication, hosting the admin, configuration, jobs, the API over NATS |
+| [AI assistant](docs/AI.md) | Providers, tools, retrieval, memory, MCP, and hosting an assistant in a service |
+| [Documentation sites](docs/DOCSITE.md) | Embedding a Starlight site behind sign-in |
+| [OIDC API tokens](docs/OIDC_API_TOKENS.md) | API tokens that mint and renew their bearer through OIDC |
+| [UI kit](ui/README.md) | `@bboxsys/ui`, the Vue kit for product consoles |
 
 ## Development
 
-```
+```sh
 go build ./...
-go test ./admin/ ./admin/client/ ./user/ ./server/ ./config/ ./logger/ ./agent/ ./job/ ./worker/ ./queue/ ./natsapi/ ./ai/...
+go test ./admin/ ./admin/client/ ./user/ ./server/ ./config/ ./logger/ ./agent/ ./job/ ./worker/ ./queue/ ./natsapi/ ./docsite/ ./ai/...
+cd ui && npm install && npm run typecheck && npm test
 ```
 
-Full API reference and integration recipes: [docs/DEVELOPER.md](docs/DEVELOPER.md).
-Renewable OIDC API tokens (storage contract, resolver, kit form):
-[docs/OIDC_API_TOKENS.md](docs/OIDC_API_TOKENS.md).
+Requires Go 1.26 and Node.js 22. Persistence is
+[bboxsys/store](https://github.com/bboxsys/store), a JSON document store
+on BadgerDB.
 
-## Layout
+## License
 
-```
-admin/           admin server package (handlers, store, oauth, pki, proxy)
-admin/client/    middleware and context helpers for other services
-admin/email/     invitation email senders (SMTP, noop)
-admin/ui/        Vue admin SPA (embedded with -tags adminui)
-cmd/admin/       standalone admin binary
-agent/           headless host agent CLI (register + run), branded per product
-cmd/agent/       unbranded agent binary (./run-agent.sh registers and runs it locally)
-supervisor/      routine supervisor used by service entry points
-controller/      embedded NATS server
-host/            host facts and the on-host agent runtime (SR-IOV PF/VF)
-job/ worker/      asynchronous jobs over NATS (requests, status, queue-group workers)
-queue/           job relay service with history store and REST surface
-natsapi/         the HTTP API bridged over NATS (service side and client transport)
-ai/              AI assistant: loop, service, Anthropic provider, API tools, rag, memory, MCP
-user/ server/ config/ logger/ messenger/ pki/ storemetrics/ logentry/
-letsencrypt/ clientip/ utils/
-```
+[Apache-2.0](LICENSE). The source is published for the projects that build
+on it. It is maintained by Black Box Systems and is not seeking outside
+contributions.

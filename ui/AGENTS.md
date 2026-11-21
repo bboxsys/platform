@@ -10,8 +10,7 @@ lib functions, consumer contract). Read it before changing exports.
 - No emojis in code, comments, or docs. No AI-tool attribution in commits.
 - This package lives in `bboxsys/platform` and is released WITH the
   platform: tagging `v0.x.y` on platform main runs `.github/workflows/
-  release.yml`, which publishes `@bboxsys/ui` at that version to GitHub
-  Packages. `version` in package.json is informational; the tag wins.
+  release.yml`, which publishes `@bboxsys/ui` at that version to npm. `version` in package.json is informational; the tag wins.
 - Everything consumers use is exported from `src/index.ts` (the barrel).
   Apps import only from the package root -- never add code that requires
   deep imports. The one exception is `@bboxsys/ui/vite` (`src/vite/`), the
@@ -23,7 +22,7 @@ lib functions, consumer contract). Read it before changing exports.
   the admin console through `admin.HostBranding`; `docsSite({ brand })`
   maps the same file onto the docs site. Keep `extractBrandTokens` the one
   reader of a brand file.
-- All runtime deps are `peerDependencies` (leaflet optional). Never add a
+- All runtime deps are `peerDependencies`. Never add a
   `dependencies` section; the consuming app owns the versions.
 - `src/types/admin.ts` mirrors the Go wire types of the platform admin
   server. When a Go response shape changes, change the type here in the
@@ -51,13 +50,8 @@ lib functions, consumer contract). Read it before changing exports.
 - `LoginCard` owns the form, error mapping, and login-service footer. Apps
   supply title, branding (`logo` prop or `#logo` slot), and route on
   `success`. Do not fork it per app.
-- Leaflet is loaded lazily (`await import('leaflet')` in GeoMap's
-  onMounted) so non-map apps do not ship it. Keep it that way. Type-only
-  imports (`import type * as LT from 'leaflet'`) are fine.
-- GeoMap renders markers as canvas `circleMarker`s with `preferCanvas`
-  (10k+ points must stay cheap) and keeps `isolate z-0` on its root so
-  Leaflet's z-1000 panes stay below app popovers. Do not reintroduce
-  divIcon markers or remove the isolation.
+- No map component and no map library: a product that draws maps owns
+  its map component and its `leaflet` dependency.
 - shadcn-vue primitives live under `src/ui/` for the kit's own components
   and are NOT in the barrel. Components inside `src/components/` import
   them as `../ui/<name>` (api-explorer files: `../../ui/<name>`).

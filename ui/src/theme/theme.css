@@ -231,11 +231,6 @@
   }
 }
 
-/* Leaflet tiles follow the theme (GeoMap). */
-.dark .leaflet-tile {
-  filter: brightness(0.7) contrast(1.1) saturate(0.6);
-}
-
 /* echarts tooltips follow the theme: pass className 'themed-tooltip', as
    baseTimeChartOption does. */
 .themed-tooltip {

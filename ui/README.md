@@ -1,161 +1,126 @@
 # @bboxsys/ui
 
-Shared Vue 3 UI kit for apps built on the platform: the theme
-(one token stylesheet with light and dark, a canvas color bridge, chart and
-tone helpers, the mode toggle), the session store and login card that sign
-in through the platform admin server, the admin API types, the HTTP client with the in-flight request counter,
-DataTable and ObjectTable (the standard table toolbar, with ObjectAction and
-ClearableSearchInput), MetricTile, AccentSurface, AppNotice, TermList,
-ConfirmDialog, PageHeader, StatusBadge, the Leaflet GeoMap, the
-OpenAPI ApiExplorer, the API token authentication form and helpers (static
-bearer or backend-minted OIDC), formatting and geo helpers, and a
-self-contained copy of the shadcn-vue primitives they use.
+[![npm](https://img.shields.io/npm/v/@bboxsys/ui)](https://www.npmjs.com/package/@bboxsys/ui)
+[![license](https://img.shields.io/npm/l/@bboxsys/ui)](./LICENSE)
 
-The package ships raw `.vue`/`.ts` source; the consuming Vite app compiles
-it with its own Vue and Tailwind v4 toolchain. It lives in the
-`bboxsys/platform` repository beside the Go packages and the admin SPA and
-is published to npm as `@bboxsys/ui` on every platform release.
+The shared Vue 3 UI kit for apps built on the
+[bboxsys platform](https://github.com/bboxsys/platform): one theme, the
+sign-in flow, and the components every console page is made of.
+
+It ships as raw `.vue` and `.ts` source. Your Vite app compiles it with its
+own Vue and Tailwind v4 toolchain, so there is no build step and no bundled
+copy of your dependencies.
+
+## What's inside
+
+| Area | What you get |
+|---|---|
+| **Theme** | One token stylesheet with light and dark, brand presets (`blue`, `orange`), `ThemeToggle`, chart and status-tone helpers, a color bridge for canvas renderers |
+| **Sign-in** | `createSessionStore` and `LoginCard` for the platform admin server, plus the admin API types |
+| **Data** | `request` HTTP client with an in-flight counter, `useAsync`, `usePolling`, `usePagedList` |
+| **Tables** | `DataTable`, and `ObjectTable` with the standard toolbar: search, selection, bulk delete, paging |
+| **Page parts** | `PageHeader`, `PageTabs`, `MetricTile`, `AccentSurface`, `AppNotice`, `TermList`, `StatusBadge`, `ConfirmDialog` |
+| **API tools** | `ApiExplorer` for OpenAPI documents, `ApiTokenAuthFields` for static bearer or OIDC credentials |
+| **Assistant** | `AssistantChat`, `AssistantDrawer`, `AssistantMarkdown` and the conversation client behind them |
+| **Docs** | `DocsGate` and `openDocsSession` for a signed-in documentation site, with a Starlight config and theme |
+| **Primitives** | A self-contained copy of the shadcn-vue primitives the components use |
 
 ## Install
 
-The package is public on npm; no registry configuration or token is
-needed:
-
-```
-npm install @bboxsys/ui@^0.10.0
+```sh
+npm install @bboxsys/ui
 ```
 
-## Consumer setup
+Runtime dependencies are peers, so your app owns the versions:
 
-1. Tailwind must scan the package. In the app's main CSS (after the tailwind
-   import):
+```sh
+npm install vue pinia @vueuse/core @lucide/vue reka-ui clsx \
+  class-variance-authority tailwind-merge marked dompurify echarts
+```
 
-   ```css
-   @source "../node_modules/@bboxsys/ui/src";
-   ```
+`@astrojs/starlight` is an optional peer, needed only for a documentation
+site.
 
-2. Import the theme after the shadcn base stylesheet, then a brand preset
-   (`blue`, the default, or `orange`). The theme defines every CSS variable
-   the components read, the Tailwind utilities over them, and both light and
-   dark; the preset sets the brand the chrome derives from:
+## Setup
 
-   ```css
-   @import "@bboxsys/ui/theme.css";
-   @import "@bboxsys/ui/brands/blue.css";
-   ```
+The kit expects Tailwind v4 with `tw-animate-css` and `shadcn-vue` in your
+app. In the main stylesheet, let Tailwind scan the kit, then import the
+theme and a brand preset:
 
-3. Import from the package root:
+```css
+@import "tailwindcss";
+@import "tw-animate-css";
+@source "../node_modules/@bboxsys/ui/src";
+@import "shadcn-vue/tailwind.css";
 
-   ```ts
-   import { createSessionStore, LoginCard, DataTable, request } from '@bboxsys/ui'
-   ```
+@import "@bboxsys/ui/theme.css";
+@import "@bboxsys/ui/brands/blue.css";
+```
 
-## Dev proxy
+Then import from the package root:
 
-Apps proxy their API to a running backend in development so the SPA stays
-same-origin, exactly as it is when embedded in the binary. `@bboxsys/ui/vite`
-builds that proxy map and honours `ADMIN_PROXY_TARGET_DEV`, so one variable
-repoints every app that uses it:
+```ts
+import { createSessionStore, LoginCard, ObjectTable, request } from '@bboxsys/ui'
+```
+
+## Entry points
+
+| Import | Purpose |
+|---|---|
+| `@bboxsys/ui` | Components, composables, helpers and types |
+| `@bboxsys/ui/theme.css` | Theme tokens and Tailwind utilities, light and dark |
+| `@bboxsys/ui/brands/blue.css`, `orange.css` | Brand presets |
+| `@bboxsys/ui/vite` | Dev-server helpers: `devProxy`, `devEndpoints`, `brandTokens` |
+| `@bboxsys/ui/starlight`, `starlight.css` | Starlight site configuration and theme |
+
+## Dev server
+
+In development an app proxies its API to a running backend so the SPA stays
+same-origin, as it is when embedded in the server binary:
 
 ```ts
 // vite.config.ts
-import { devProxy } from '@bboxsys/ui/vite'
+import { devEndpoints, devProxy } from '@bboxsys/ui/vite'
+
+const backend = { fallback: 'https://localhost:8880', env: 'MYAPP_UI_SERVER' }
 
 export default defineConfig({
-  server: {
-    port: 4320,
-    proxy: devProxy(['/serviceendpoints'], {
-      fallback: 'https://localhost:8880',
-      env: 'MYAPP_UI_SERVER',
-    }),
-  },
+  plugins: [vue(), devEndpoints(backend)],
+  server: { proxy: devProxy(['/serviceendpoints'], backend) },
 })
 ```
 
-The target is resolved in order: `ADMIN_PROXY_TARGET_DEV`, then the app's own
-variable if `env` names one, then `fallback`. So an app keeps whatever
-variable it already documented, and a developer running several SPAs against
-one backend sets the shared one instead:
+Two environment variables repoint every app that uses these helpers:
 
-```
+| Variable | Effect |
+|---|---|
+| `ADMIN_PROXY_TARGET_DEV` | Backend the proxy forwards to; wins over the app's own variable and `fallback` |
+| `BBOX_DEV_ENDPOINTS` | Rewrites the service URLs the backend publishes, which decide where the SPA signs in |
+
+```sh
 ADMIN_PROXY_TARGET_DEV=https://localhost:9900 npm run dev
 ```
 
-`devProxyTarget(opts)` returns just the resolved URL for configs that need it
-elsewhere. Only the listed path prefixes are proxied: an app that discovers
-absolute service URLs from `/serviceendpoints/` still calls those directly,
-and they stay subject to that service's CORS configuration.
+## Documentation
 
-### Overriding the service endpoint map
+- [Developer guide](https://github.com/bboxsys/platform/blob/main/ui/docs/DEVELOPER.md):
+  every component, prop and helper, with the theme and dev-server details.
+- [Documentation sites](https://github.com/bboxsys/platform/blob/main/docs/DOCSITE.md):
+  serving a Starlight site behind sign-in.
+- [Platform guide](https://github.com/bboxsys/platform/blob/main/docs/DEVELOPER.md):
+  the Go side the kit talks to.
 
-Moving the proxy does not change where the SPA signs in. Apps discover service
-URLs from the server's `/serviceendpoints/` map, and the URLs inside that map
-win: point the proxy at another backend and the login card still shows
-whatever `login_service` the map published. `devEndpoints()` rewrites entries
-of the map for the dev server only, so the browser code stays identical to
-production:
+## Contributing
 
-```ts
-import { devEndpoints, devProxy } from '@bboxsys/ui/vite'
-
-const devServer = { fallback: 'https://localhost:8880', env: 'MYAPP_UI_SERVER', project: 'myapp' }
-
-export default defineConfig({
-  plugins: [vue(), devEndpoints(devServer)],
-  server: { proxy: devProxy(['/serviceendpoints'], devServer) },
-})
-```
-
-Then:
-
-```
-BBOX_DEV_ENDPOINTS=https://localhost:9900 npm run dev
-```
-
-A bare URL is shorthand for the admin/login pair (`login_service` and
-`admin_service`). Any kind can be set explicitly, and unlisted kinds keep the
-URL the server published:
-
-```
-BBOX_DEV_ENDPOINTS=login_service=https://localhost:9900,aws_service=http://localhost:9910
-```
-
-With `project` set, the plugin also reads
-`~/.config/{project}-test/dev-endpoints.json` for a setup worth keeping
-between sessions, alongside whatever else lives in that directory:
-
-```json
-{ "login_service": "https://localhost:9900", "admin_service": "https://localhost:9900" }
-```
-
-The environment variable wins over the file. With neither set the plugin
-stands aside and the route is proxied untouched. It prints the overrides it
-applied at startup, so a dev server that is not using them says so by
-staying quiet.
-
-## Develop
-
-```
+```sh
 npm install
 npm run typecheck
 npm test
 ```
 
-To exercise a change in a real app, run the platform admin server with
-`../run.sh` and the admin SPA with `cd ../admin/ui && npm run dev`; the SPA
-depends on this directory by path. Other apps can link it temporarily with
-`npm install --no-save ../../platform/ui`.
+The kit lives in the `ui/` directory of `bboxsys/platform` and is published
+to npm at the platform's version on every `v*` tag.
 
-## Documentation sites
+## License
 
-A product's Starlight documentation site configures itself with
-`@bboxsys/ui/starlight` and themes itself with `@bboxsys/ui/starlight.css`;
-the SPA opens it through `DocsGate` and `openDocsSession`. The platform's
-`docs/DOCSITE.md` describes the whole contract, including the Go handler
-that serves the site behind sign-in and the assistant tools over it.
-
-## Release
-
-Tag `v0.x.y` on platform `main`. The Release workflow publishes this
-package at that version; consumers bump `@bboxsys/ui` in package.json and
-run `npm install`.
+[Apache-2.0](./LICENSE)
