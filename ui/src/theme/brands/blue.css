@@ -1,0 +1,22 @@
+/* Brand preset: blue. The Black Box Systems identity, carried over from the
+ * Angular app's Material theme (azure primary, cyan tertiary). This is also
+ * the kit's default, restated here so an app can name its brand explicitly:
+ *
+ *   @import "@bboxsys/ui/theme.css";
+ *   @import "@bboxsys/ui/brands/blue.css";
+ *
+ * A preset sets only the brand tokens; the chrome derives from them. */
+:root {
+  --brand-hue: 258;
+  --brand: oklch(0.5 0.19 258);
+  --brand-foreground: oklch(0.985 0 0);
+  --brand-highlight: oklch(0.726 0.124 195);
+  --brand-highlight-ink: oklch(0.475 0.081 195);
+}
+
+.dark {
+  --brand: oklch(0.66 0.18 258);
+  --brand-foreground: oklch(0.985 0 0);
+  --brand-highlight: oklch(0.81 0.14 195);
+  --brand-highlight-ink: oklch(0.8 0.13 195);
+}

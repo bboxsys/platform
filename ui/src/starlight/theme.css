@@ -1,0 +1,106 @@
+/* @bboxsys/ui Starlight theme: the kit's palette for a product's
+ * documentation site, applied by docsSite() ahead of the product's own
+ * stylesheet. Every surface is tinted toward --brand-hue with chroma under
+ * 0.02, as in theme.css for the SPA; the accent is the brand. A product
+ * sets its hue (and, if it wants, its accent) in its own customCss, after
+ * this file:
+ *
+ *   :root { --brand-hue: 155; }
+ *
+ * Starlight's default is the dark theme; the light theme reassigns the
+ * same names. The chart tokens mirror --chart-* in theme.css so a chart
+ * builder shared with the SPA paints the same palette here.
+ */
+@import url('https://fonts.googleapis.com/css2?family=Geist:wght@400;500;600;700&display=swap');
+
+:root {
+	--sl-font: 'Geist', ui-sans-serif, system-ui, sans-serif;
+	--brand-hue: 258;
+
+	/* Dark theme, matching .dark in the kit. */
+	--sl-color-accent-low: oklch(0.3 0.07 var(--brand-hue));
+	--sl-color-accent: oklch(0.7 0.15 var(--brand-hue));
+	--sl-color-accent-high: oklch(0.88 0.1 var(--brand-hue));
+	--sl-color-white: oklch(0.975 0.003 var(--brand-hue));
+	--sl-color-gray-1: oklch(0.93 0.008 var(--brand-hue));
+	--sl-color-gray-2: oklch(0.85 0.012 var(--brand-hue));
+	--sl-color-gray-3: oklch(0.712 0.014 var(--brand-hue));
+	--sl-color-gray-4: oklch(0.46 0.018 var(--brand-hue));
+	--sl-color-gray-5: oklch(0.268 0.014 var(--brand-hue));
+	--sl-color-gray-6: oklch(0.202 0.014 var(--brand-hue));
+	--sl-color-black: oklch(0.155 0.012 var(--brand-hue));
+
+	--sl-color-text-accent: var(--sl-color-accent);
+
+	--chart-1: oklch(0.622 0.161 255.1);
+	--chart-2: oklch(0.621 0.128 163.1);
+	--chart-3: oklch(0.622 0.173 40.1);
+	--chart-4: oklch(0.776 0.149 226.6);
+	--chart-5: oklch(0.645 0.26 2.8);
+	--chart-6: oklch(0.659 0.167 299.6);
+	--chart-7: oklch(0.667 0.031 261.4);
+	--chart-ink: var(--sl-color-white);
+	--chart-muted: var(--sl-color-gray-3);
+	--chart-grid: oklch(0.28 0.016 var(--brand-hue));
+	--chart-axis: oklch(0.34 0.018 var(--brand-hue));
+	--chart-surface: var(--sl-color-bg);
+}
+
+:root[data-theme='light'] {
+	/* Light theme, matching :root in the kit. */
+	--sl-color-accent-low: oklch(0.94 0.04 var(--brand-hue));
+	--sl-color-accent: oklch(0.52 0.14 var(--brand-hue));
+	--sl-color-accent-high: oklch(0.36 0.1 var(--brand-hue));
+	--sl-color-white: oklch(0.16 0.012 var(--brand-hue));
+	--sl-color-gray-1: oklch(0.24 0.02 var(--brand-hue));
+	--sl-color-gray-2: oklch(0.36 0.02 var(--brand-hue));
+	--sl-color-gray-3: oklch(0.53 0.018 var(--brand-hue));
+	--sl-color-gray-4: oklch(0.72 0.012 var(--brand-hue));
+	--sl-color-gray-5: oklch(0.912 0.008 var(--brand-hue));
+	--sl-color-gray-6: oklch(0.966 0.005 var(--brand-hue));
+	--sl-color-gray-7: oklch(0.985 0.003 var(--brand-hue));
+	--sl-color-black: oklch(0.995 0.002 var(--brand-hue));
+
+	--sl-color-text-accent: var(--sl-color-accent);
+
+	--chart-1: oklch(0.575 0.163 255.5);
+	--chart-2: oklch(0.669 0.141 162.1);
+	--chart-3: oklch(0.671 0.175 40.6);
+	--chart-4: oklch(0.776 0.149 226.6);
+	--chart-5: oklch(0.645 0.26 2.8);
+	--chart-6: oklch(0.556 0.173 301);
+	--chart-7: oklch(0.562 0.035 258.9);
+	--chart-grid: oklch(0.925 0.006 var(--brand-hue));
+	--chart-axis: oklch(0.86 0.008 var(--brand-hue));
+}
+
+/* The kit's radius on cards and code blocks. */
+.card,
+.sl-markdown-content pre,
+.starlight-aside {
+	border-radius: 0.625rem;
+}
+
+/* Tables carry a lot of reference content; keep the header quiet. */
+.sl-markdown-content table {
+	font-size: var(--sl-text-sm);
+}
+.sl-markdown-content th {
+	font-weight: 600;
+	color: var(--sl-color-white);
+	background: var(--sl-color-gray-6);
+}
+
+/* ECharts tooltips follow the theme when a builder passes className
+   'themed-tooltip', as the kit's baseTimeChartOption does. ECharts creates
+   the element empty at init; hide it until it has content. */
+.themed-tooltip {
+	background: var(--sl-color-bg-nav) !important;
+	color: var(--sl-color-white) !important;
+	border: 1px solid var(--sl-color-hairline) !important;
+	box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25) !important;
+	font-family: var(--sl-font) !important;
+}
+.themed-tooltip:empty {
+	display: none !important;
+}

@@ -1,0 +1,246 @@
+/* @bboxsys/ui theme: the one place a color is defined.
+ *
+ * An app imports this after tailwind and the shadcn base stylesheet:
+ *
+ *   @import "tailwindcss";
+ *   @import "tw-animate-css";
+ *   @source "../node_modules/@bboxsys/ui/src";
+ *   @import "shadcn-vue/tailwind.css";
+ *   @import "@bboxsys/ui/theme.css";
+ *
+ * and then picks a brand -- one of the presets in brands/ (blue is the
+ * default, orange the other) or its own :root / .dark override block; both
+ * come later in the cascade, so they win -- and adds product-specific tokens
+ * of its own. Three knobs move the whole product:
+ *
+ *   --brand-hue        the hue the chrome is tinted toward. Every surface,
+ *                      border and muted text carries chroma under 0.02 at
+ *                      this hue, so cards and sidebars sit under the brand
+ *                      rather than beside it.
+ *   --brand            the primary accent: buttons, links, focus, selection.
+ *   --brand-highlight  the secondary accent: grouping, the second rail.
+ *
+ * Every token is oklch so the canvas bridge in tokens.ts can resolve it to a
+ * hex the bitmap renderers accept. Keep it that way: a hex or rgb() literal
+ * is parsed too, but a named color or color-mix() is not.
+ *
+ * Palette. Three tiers, and a color only ever speaks for one of them:
+ *
+ *   brand   identity, structure, and anything interactive.
+ *   status  state -- healthy, nearing a limit, failed. The fills are fixed
+ *           in both themes because a permit/deny reading has to stay
+ *           green/amber/red and must not shift when a brand palette does.
+ *   chart   series identity only, assigned by entity in a fixed order.
+ */
+
+@custom-variant dark (&:is(.dark *));
+
+:root {
+  /* The default brand is brands/blue.css. */
+  --brand-hue: 258;
+  --brand: oklch(0.5 0.19 var(--brand-hue));
+  --brand-foreground: oklch(0.985 0 0);
+  --brand-highlight: oklch(0.726 0.124 195);
+  /* The highlight is a fill, not type: it reads under 3:1 on a white surface.
+     Text and icons take the darkened variant instead. */
+  --brand-highlight-ink: oklch(0.475 0.081 195);
+
+  /* Fills: dots, meters, legend swatches. Identical in both themes. */
+  --status-good: oklch(0.621 0.207 142.6);
+  --status-warn: oklch(0.811 0.164 78.5);
+  --status-bad: oklch(0.575 0.186 25.2);
+  /* Text and icons on a page surface, where the fills are too light to read. */
+  --status-good-text: oklch(0.521 0.164 145);
+  --status-warn-text: oklch(0.522 0.126 71);
+  --status-bad-text: oklch(0.545 0.186 25.2);
+
+  --background: oklch(0.995 0.002 var(--brand-hue));
+  --foreground: oklch(0.16 0.012 var(--brand-hue));
+  --card: oklch(1 0 0);
+  --card-foreground: oklch(0.16 0.012 var(--brand-hue));
+  --popover: oklch(1 0 0);
+  --popover-foreground: oklch(0.16 0.012 var(--brand-hue));
+  --primary: var(--brand);
+  --primary-foreground: var(--brand-foreground);
+  --secondary: oklch(0.965 0.006 var(--brand-hue));
+  --secondary-foreground: oklch(0.24 0.02 var(--brand-hue));
+  --muted: oklch(0.966 0.005 var(--brand-hue));
+  --muted-foreground: oklch(0.53 0.018 var(--brand-hue));
+  --accent: oklch(0.955 0.018 var(--brand-hue));
+  --accent-foreground: oklch(0.36 0.13 var(--brand-hue));
+  --destructive: oklch(0.575 0.186 25.2);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(0.912 0.008 var(--brand-hue));
+  --input: oklch(0.912 0.008 var(--brand-hue));
+  --ring: var(--brand);
+
+  /* Series slots. Fixed order, assigned by entity, never cycled. */
+  --chart-1: oklch(0.575 0.163 255.5);
+  --chart-2: oklch(0.669 0.141 162.1);
+  --chart-3: oklch(0.671 0.175 40.6);
+  --chart-4: oklch(0.776 0.149 226.6);
+  --chart-5: oklch(0.645 0.26 2.8);
+  --chart-6: oklch(0.556 0.173 301);
+  --chart-7: oklch(0.562 0.035 258.9);
+
+  /* Canvas renderers paint into a bitmap and cannot resolve a token carrying
+     alpha, so the graph chrome gets its own opaque values rather than
+     borrowing --border and --card. */
+  --graph-surface: oklch(1 0 0);
+  --graph-edge: oklch(0.86 0.009 var(--brand-hue));
+  --graph-grid: oklch(0.925 0.006 var(--brand-hue));
+  --graph-axis: oklch(0.86 0.008 var(--brand-hue));
+
+  --radius: 0.625rem;
+  --sidebar: oklch(0.977 0.005 var(--brand-hue));
+  --sidebar-foreground: oklch(0.16 0.012 var(--brand-hue));
+  --sidebar-primary: var(--brand);
+  --sidebar-primary-foreground: var(--brand-foreground);
+  --sidebar-accent: oklch(0.945 0.021 var(--brand-hue));
+  --sidebar-accent-foreground: oklch(0.34 0.14 var(--brand-hue));
+  --sidebar-border: oklch(0.912 0.008 var(--brand-hue));
+  --sidebar-ring: var(--brand);
+}
+
+.dark {
+  /* Lifted off the brand value so it keeps presence against a dark ground. */
+  --brand: oklch(0.66 0.18 var(--brand-hue));
+  --brand-foreground: oklch(0.985 0 0);
+  --brand-highlight: oklch(0.81 0.14 195);
+  --brand-highlight-ink: oklch(0.8 0.13 195);
+
+  --status-good: oklch(0.621 0.207 142.6);
+  --status-warn: oklch(0.811 0.164 78.5);
+  --status-bad: oklch(0.575 0.186 25.2);
+  --status-good-text: oklch(0.723 0.176 148);
+  --status-warn-text: oklch(0.855 0.128 84);
+  --status-bad-text: oklch(0.704 0.191 22.2);
+
+  --background: oklch(0.155 0.012 var(--brand-hue));
+  --foreground: oklch(0.975 0.003 var(--brand-hue));
+  --card: oklch(0.202 0.014 var(--brand-hue));
+  --card-foreground: oklch(0.975 0.003 var(--brand-hue));
+  --popover: oklch(0.202 0.014 var(--brand-hue));
+  --popover-foreground: oklch(0.975 0.003 var(--brand-hue));
+  --primary: var(--brand);
+  --primary-foreground: var(--brand-foreground);
+  --secondary: oklch(0.268 0.014 var(--brand-hue));
+  --secondary-foreground: oklch(0.975 0.003 var(--brand-hue));
+  --muted: oklch(0.268 0.014 var(--brand-hue));
+  --muted-foreground: oklch(0.712 0.014 var(--brand-hue));
+  --accent: oklch(0.302 0.032 var(--brand-hue));
+  --accent-foreground: oklch(0.93 0.031 var(--brand-hue));
+  --destructive: oklch(0.704 0.191 22.216);
+  --destructive-foreground: oklch(0.985 0 0);
+  --border: oklch(0.72 0.06 var(--brand-hue) / 16%);
+  --input: oklch(0.72 0.06 var(--brand-hue) / 20%);
+  --ring: var(--brand);
+
+  --chart-1: oklch(0.622 0.161 255.1);
+  --chart-2: oklch(0.621 0.128 163.1);
+  --chart-3: oklch(0.622 0.173 40.1);
+  --chart-4: oklch(0.776 0.149 226.6);
+  --chart-5: oklch(0.645 0.26 2.8);
+  --chart-6: oklch(0.659 0.167 299.6);
+  --chart-7: oklch(0.667 0.031 261.4);
+
+  --graph-surface: oklch(0.202 0.014 var(--brand-hue));
+  --graph-edge: oklch(0.34 0.02 var(--brand-hue));
+  --graph-grid: oklch(0.28 0.016 var(--brand-hue));
+  --graph-axis: oklch(0.34 0.018 var(--brand-hue));
+
+  --sidebar: oklch(0.185 0.014 var(--brand-hue));
+  --sidebar-foreground: oklch(0.975 0.003 var(--brand-hue));
+  --sidebar-primary: var(--brand);
+  --sidebar-primary-foreground: var(--brand-foreground);
+  --sidebar-accent: oklch(0.292 0.036 var(--brand-hue));
+  --sidebar-accent-foreground: oklch(0.95 0.022 var(--brand-hue));
+  --sidebar-border: oklch(0.72 0.06 var(--brand-hue) / 16%);
+  --sidebar-ring: var(--brand);
+}
+
+/* Tailwind utilities over the tokens: bg-brand, text-status-warn-text,
+   border-sidebar-border, ... An app that adds tokens of its own adds a
+   second @theme inline block for them. */
+@theme inline {
+  --color-brand: var(--brand);
+  --color-brand-foreground: var(--brand-foreground);
+  --color-brand-highlight: var(--brand-highlight);
+  --color-brand-highlight-ink: var(--brand-highlight-ink);
+  --color-status-good: var(--status-good);
+  --color-status-warn: var(--status-warn);
+  --color-status-bad: var(--status-bad);
+  --color-status-good-text: var(--status-good-text);
+  --color-status-warn-text: var(--status-warn-text);
+  --color-status-bad-text: var(--status-bad-text);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-chart-6: var(--chart-6);
+  --color-chart-7: var(--chart-7);
+  --color-graph-surface: var(--graph-surface);
+  --color-graph-edge: var(--graph-edge);
+  --color-graph-grid: var(--graph-grid);
+  --color-graph-axis: var(--graph-axis);
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+  /* The face is the app's to load (an @import url() in its own stylesheet,
+     which must precede every other rule); the token just names it. */
+  --font-sans: 'Geist Variable', sans-serif;
+  --font-heading: var(--font-sans);
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    @apply font-sans;
+  }
+}
+
+/* Leaflet tiles follow the theme (GeoMap). */
+.dark .leaflet-tile {
+  filter: brightness(0.7) contrast(1.1) saturate(0.6);
+}
+
+/* echarts tooltips follow the theme: pass className 'themed-tooltip', as
+   baseTimeChartOption does. */
+.themed-tooltip {
+  background: var(--popover) !important;
+  color: var(--popover-foreground) !important;
+  border: 1px solid var(--border) !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, .25) !important;
+}

@@ -1,0 +1,51 @@
+name: Test
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  go:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Build
+        run: go build ./...
+      - name: Vet
+        run: go vet ./...
+      - name: Test
+        run: go test -race ./...
+
+  # The shared Vue kit (published as @bboxsys/ui) and the admin SPA that
+  # consumes it from ../../ui. Neither needs the package registry: the SPA
+  # links the kit by path.
+  ui:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: |
+            ui/package-lock.json
+            admin/ui/package-lock.json
+      - name: Kit dependencies
+        working-directory: ui
+        run: npm ci
+      - name: Kit typecheck
+        working-directory: ui
+        run: npm run typecheck
+      - name: Kit tests
+        working-directory: ui
+        run: npm test
+      - name: Admin SPA dependencies
+        working-directory: admin/ui
+        run: npm ci
+      - name: Admin SPA build
+        working-directory: admin/ui
+        run: npm run build

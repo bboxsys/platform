@@ -1,0 +1,58 @@
+[app]
+name = "blackbox"
+root_path = "~/.blackbox/test"
+hostname = "localhost"
+login_service = "https://localhost:9900"
+admin_service = "https://localhost:9900"
+blackbox_service = "https://localhost:9901"
+controller_service = "tls://localhost:4223"
+controller_server_name= "localhost"
+proxy_service = "https://localhost:9881"
+queue_service = "https://localhost:9882"
+# these credentials are used for API and Messenger
+# account_id is is only for API
+account_id = ""
+jwt = ""
+seed = ""
+
+[admin_server]
+admin_email = "account@email.org"
+admin_temp_password = "changeme"
+port = 9900
+url = "https://localhost:9900"
+intermediate_ca_file = "~/certs/rootCA.pem"
+intermediate_cert_file = "~/certs/localhost.cert.pem"
+intermediate_key_file = "~/certs/localhost.key.pem"
+
+[blackbox_server]
+port = 9901
+url = "https://localhost:9901"
+
+[ui]
+port = 9880
+
+[proxy_server]
+port = 9881
+
+[queue_server]
+port = 9882
+
+[controller]
+account_server = "https://localhost:9900/jwt/v1/accounts/"
+server_name = "localhost"
+url = "tls://localhost:4223"
+port = 4223
+monitoring_port = 9222
+# this will be automatically generated if emtpy
+# todo: generate without access to embedded admin server
+system_account_id = ""
+operator_jwt = ""
+
+[messenger]
+jwt = ""
+seed = ""
+
+[security]
+cert_file = "~/certs/localhost.cert.pem"
+key_file = "~/certs/localhost.key.pem"
+ca_file = "~/certs/rootCA.pem"

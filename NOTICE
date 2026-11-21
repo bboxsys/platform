@@ -1,0 +1,8 @@
+platform
+Copyright 2026 Black Box Systems, LLC
+
+This product includes software developed at Black Box Systems, LLC.
+
+Portions of pki/key.go and user/utils.go are derived from the Go standard
+library (crypto/tls), Copyright 2009 The Go Authors, used under the BSD
+3-Clause license reproduced in those files.

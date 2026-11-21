@@ -1,0 +1,36 @@
+{
+  // Self-contained on purpose: this file must not "extends" a package. The
+  // admin SPA links the kit by path, and Vite reads this tsconfig when it
+  // transforms kit files, before the kit has any node_modules of its own
+  // (fresh clones, CI, consumers building the admin SPA from a checkout).
+  // The options mirror @vue/tsconfig/tsconfig.dom.json.
+  "compilerOptions": {
+    "target": "ESNext",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "moduleDetection": "force",
+    "resolveJsonModule": true,
+    "allowImportingTsExtensions": true,
+    "verbatimModuleSyntax": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "useDefineForClassFields": true,
+    "libReplacement": false,
+    "skipLibCheck": true,
+    "noEmit": true,
+    "composite": false,
+    "jsx": "preserve",
+    "jsxImportSource": "vue",
+    "types": ["vite/client", "node"],
+
+    /* Match the strictness the consuming app applies to this source. */
+    "strict": true,
+    "noImplicitThis": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true
+  },
+  "include": ["src/**/*.ts", "src/**/*.vue"],
+  "exclude": ["node_modules"]
+}

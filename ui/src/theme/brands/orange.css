@@ -1,0 +1,21 @@
+/* Brand preset: orange (orange primary, blue tertiary):
+ *
+ *   @import "@bboxsys/ui/theme.css";
+ *   @import "@bboxsys/ui/brands/orange.css";
+ *
+ * The light brand sits below the display orange (#FF6B35, L 0.70) so white
+ * text on a button clears 4.5:1; dark mode carries the display value. */
+:root {
+  --brand-hue: 40;
+  --brand: oklch(0.6 0.19 39);
+  --brand-foreground: oklch(0.985 0 0);
+  --brand-highlight: oklch(0.65 0.2 275);
+  --brand-highlight-ink: oklch(0.5 0.2 275);
+}
+
+.dark {
+  --brand: oklch(0.72 0.19 39);
+  --brand-foreground: oklch(0.16 0.02 40);
+  --brand-highlight: oklch(0.75 0.15 275);
+  --brand-highlight-ink: oklch(0.8 0.12 275);
+}

@@ -1,0 +1,11 @@
+*.db/
+*.log
+.DS_Store
+admin/ui/node_modules/
+admin/ui/dist/
+cmd/admin/dist/
+go.work
+go.work.sum
+vendor/
+config/default-*-sample.json
+pki/localhost.*.pem
