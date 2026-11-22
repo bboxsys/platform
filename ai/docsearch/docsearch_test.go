@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"testing/fstest"
 
@@ -113,8 +114,9 @@ func TestNewValidates(t *testing.T) {
 
 // embeddingServer speaks the OpenAI embeddings dialect with a
 // deterministic bag-of-words vector, enough for similarity to mean
-// something in a test. calls counts embedding requests.
-func embeddingServer(t *testing.T, dims int, calls *int) *httptest.Server {
+// something in a test. calls counts embedding requests; it is atomic
+// because the server handles a sync's batches on concurrent goroutines.
+func embeddingServer(t *testing.T, dims int, calls *atomic.Int64) *httptest.Server {
 	t.Helper()
 	return httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		var req struct {
@@ -133,7 +135,7 @@ func embeddingServer(t *testing.T, dims int, calls *int) *httptest.Server {
 				inputs = append(inputs, x.(string))
 			}
 		}
-		*calls += len(inputs)
+		calls.Add(int64(len(inputs)))
 		type item struct {
 			Embedding []float32 `json:"embedding"`
 			Index     int       `json:"index"`
@@ -162,7 +164,7 @@ func embeddingServer(t *testing.T, dims int, calls *int) *httptest.Server {
 }
 
 func TestVectorSync(t *testing.T) {
-	calls := 0
+	var calls atomic.Int64
 	srv := embeddingServer(t, 64, &calls)
 	defer srv.Close()
 	cred := ai.Credential{Name: "emb", ResourceType: ai.ResourceTypeEmbedding, Provider: ai.ProviderOpenAICompat, Endpoint: srv.URL, Model: "test-a"}
@@ -180,15 +182,15 @@ func TestVectorSync(t *testing.T) {
 	if !st.Enabled || !st.Ready || st.Indexed != 4 || st.Pending != 0 || st.Error != "" || !strings.HasPrefix(st.Profile, "openai_compat/") {
 		t.Errorf("after sync: %+v", st)
 	}
-	if calls != 4 {
-		t.Errorf("embedded %d sections, want 4", calls)
+	if calls.Load() != 4 {
+		t.Errorf("embedded %d sections, want 4", calls.Load())
 	}
 	// A second sync of an unchanged site embeds nothing.
 	if err := c.Sync(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	if calls != 4 {
-		t.Errorf("unchanged sync re-embedded: %d", calls)
+	if calls.Load() != 4 {
+		t.Errorf("unchanged sync re-embedded: %d", calls.Load())
 	}
 	// Fused search still finds the section; the query is embedded once.
 	hits, err := c.Search(context.Background(), "rolling to an IRA", 3)
@@ -198,8 +200,8 @@ func TestVectorSync(t *testing.T) {
 	if len(hits) == 0 || hits[0].Section.ID != "planning/rule-of-55/#mistakes" {
 		t.Errorf("hits %+v", hits)
 	}
-	if calls != 5 {
-		t.Errorf("query embeddings: %d", calls)
+	if calls.Load() != 5 {
+		t.Errorf("query embeddings: %d", calls.Load())
 	}
 	// A restart (new corpus over the same directory) reuses the manifest.
 	c.Close()
@@ -210,8 +212,8 @@ func TestVectorSync(t *testing.T) {
 	if err := c2.Sync(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	if calls != 5 || !c2.Status().Vectors.Ready {
-		t.Errorf("restart re-embedded: %d %+v", calls, c2.Status().Vectors)
+	if calls.Load() != 5 || !c2.Status().Vectors.Ready {
+		t.Errorf("restart re-embedded: %d %+v", calls.Load(), c2.Status().Vectors)
 	}
 	// A changed model is a new generation; the old one is retired once
 	// the new one is complete.
@@ -219,8 +221,8 @@ func TestVectorSync(t *testing.T) {
 	if err := c2.Sync(context.Background()); err != nil {
 		t.Fatal(err)
 	}
-	if calls != 9 || !c2.Status().Vectors.Ready {
-		t.Errorf("new profile: %d %+v", calls, c2.Status().Vectors)
+	if calls.Load() != 9 || !c2.Status().Vectors.Ready {
+		t.Errorf("new profile: %d %+v", calls.Load(), c2.Status().Vectors)
 	}
 	entries, _ := os.ReadDir(dir)
 	if len(entries) != 1 {
